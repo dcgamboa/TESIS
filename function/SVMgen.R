@@ -14,12 +14,12 @@
 #               phi <- vector of noise in eq for ln(sigma^2) from SVM
 #               n   <- sample size, we use 100 iteration for chain burning
 #                      this value must be grater than 100. Real size n - 100   
-# output:       a sample of size n, and real values of volatility
+# output:       a sample of size n
 #
 # creadet by:   Carolina Gamboa
-#
 # version2: we modify the inputs. Now the user is asked to give the value of the 
 #           variance of phi, instead of assigning it in 1 as in the previous version. 
+# version3: we generate as a seed the log of volatility by normal
 #----------------------------------------------------------------------------------
 
 genSVM <- function(a, phi, sigma2_phi, n){
@@ -29,16 +29,15 @@ genSVM <- function(a, phi, sigma2_phi, n){
   } 
   else {
   error <- rnorm(n)
-  sigma2 <- NULL
-  sigma2[1] <- rlnorm(1, a[1]/(1-a[2]), sqrt( sigma2_phi/(1-(a[2]^2)) ) )
-  y <- NULL
+  lsigma2 <- NULL
+  lsigma2[1] <- rnorm(1, a[1]/(1-a[2]), sqrt( sigma2_phi/( 1-(a[2]^2) ) ) )
   x <- NULL
   for(i in 1:n){
-    y[i] <- exp(a[1] + a[2]*log(sigma2[i]) + phi[i])
-    sigma2[i+1] <- y[i]
-    x[i] <- error[i]*sqrt(y[i])
+    lsigma2[i+1] <- a[1] + a[2]*lsigma2[i] + phi[i]
+    x[i] <- error[i]*sqrt(exp(lsigma2[i+1]))
   }
   
+  sigma2 <- exp(lsigma2)
   x <- ts(x[101:n])
   sigma2 <- ts(sigma2[102:(n+1)]) 
   z <- list(x, sigma2)
@@ -47,21 +46,38 @@ genSVM <- function(a, phi, sigma2_phi, n){
   }
 }
 
+
+# corre <- NULL
+# lcorre1 <- NULL
+# lcorre2 <- NULL
+# lcorre3 <- NULL
 # 
-# #corre <- NULL
-# lcorre <- NULL
 # a1 <- c(0.1, 0.85)
-# sigma2_phi1 <- 1
+# sigma2_phi1 <- 0.2
 # n = 1100
 # for(i in 1:1000){
-#   x1 <- svsim(1000, mu = -10, phi = 0.2, sigma = 1)
-#   x2 <- svsim(1000, mu = -10, phi = 0.99, sigma = 1)
-#   #lcorre <- c(corre, 1-GCC_d(x1$sigma2^2, x2$sigma2^2, 5))
-#   lcorre <- c(lcorre, 1-GCC_d(log(x1$vol^2), log(x2$vol^2), 1))
-# }
+# # x1 <- svsim(1000, mu = -10, phi = 0.99, sigma = 0.2)
+# # x2 <- svsim(1000, mu = -10, phi = 0.99, sigma = 0.2)
+# #   lcorre <- c(lcorre, 1-GCC_d(log(x1$vol^2), log(x2$vol^2), 0))
 # 
-# hist(lcorre)
+# 
+#     x1 <- genSVM_mod(a1, phi = rnorm(n, 0, sqrt(0.2)), sigma2_phi= 0.2, n)
+#   x2 <- genSVM_mod(a1, phi = rnorm(n, sqrt(0.2)), sigma2_phi = 0.2, n)
+#   x3 <- genSVM_mod(a2, phi = rnorm(n, sqrt(0.2)), sigma2_phi = 0.2, n)
+#   x4 <- genSVM_mod(a2, phi = rnorm(n, sqrt(0.2)), sigma2_phi = 0.2, n)
+# 
+#   k = 1  
+#    lcorre1 <- c(lcorre, 1-GCC_d(log(x1$sigma2), log(x2$sigma2), k))
+#    lcorre2 <- c(lcorre, 1-GCC_d(log(x1$sigma2), log(x3$sigma2), k))
+#    lcorre3 <- c(lcorre, 1-GCC_d(log(x3$sigma2), log(x4$sigma2), k))
+# 
+#   }
+# 
+# hist(lcorre1)
+# hist(lcorre2)
+# hist(lcorre3)
 
+# 
 # 
 # n <- 580
 # a <- c(0.831, 0.685)
